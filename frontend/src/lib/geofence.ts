@@ -1,6 +1,9 @@
 export const GEOFENCE_RADIUS_M = 100;
 export const GEOFENCE_DEBOUNCE_MS = 30 * 60 * 1000;
+export const GEOFENCE_DWELL_MS = 5 * 60 * 1000;
 const PROMPT_STORAGE_KEY = "confia_geofence_prompted";
+
+export type GeofencePromptKind = "arrival" | "boarding" | "dwell";
 
 export interface GeoPoint {
   lat: number;
@@ -12,6 +15,20 @@ export interface GeofenceStop {
   name: string;
   latitude: string;
   longitude: string;
+}
+
+export interface GeofencePromptEvent {
+  stop: GeofenceStop;
+  kind: GeofencePromptKind;
+}
+
+export interface TrackGeofenceContextOptions {
+  stops: GeofenceStop[];
+  /** When set, only prompt when the nearest stop matches this id. */
+  filterStopId?: number;
+  /** Kind used before dwell threshold is reached. */
+  defaultKind?: GeofencePromptKind;
+  onPrompt: (event: GeofencePromptEvent) => void;
 }
 
 const EARTH_RADIUS_KM = 6371;
@@ -78,11 +95,28 @@ export function markPrompted(stopId: number): void {
   writePromptedMap(map);
 }
 
-export function watchNearStop(
-  stops: GeofenceStop[],
-  onEnter: (stop: GeofenceStop) => void,
-): () => void {
+function detectPromptKind(
+  stopId: number,
+  defaultKind: GeofencePromptKind,
+  dwellAnchor: { stopId: number; since: number } | null,
+): GeofencePromptKind {
+  if (
+    dwellAnchor?.stopId === stopId &&
+    Date.now() - dwellAnchor.since >= GEOFENCE_DWELL_MS
+  ) {
+    return "dwell";
+  }
+
+  return defaultKind;
+}
+
+export function trackGeofenceContext(options: TrackGeofenceContextOptions): () => void {
+  const { stops, filterStopId, defaultKind = "arrival", onPrompt } = options;
+
   if (!navigator.geolocation) return () => {};
+
+  let dwellAnchor: { stopId: number; since: number } | null = null;
+  let lastEventKey: string | null = null;
 
   const watchId = navigator.geolocation.watchPosition(
     (position) => {
@@ -91,13 +125,50 @@ export function watchNearStop(
         lng: position.coords.longitude,
       };
       const stop = nearestStop(point, stops);
-      if (stop && !wasRecentlyPrompted(stop.id)) {
-        onEnter(stop);
+
+      if (!stop) {
+        dwellAnchor = null;
+        lastEventKey = null;
+        return;
       }
+
+      if (filterStopId !== undefined && stop.id !== filterStopId) {
+        dwellAnchor = null;
+        lastEventKey = null;
+        return;
+      }
+
+      if (wasRecentlyPrompted(stop.id)) return;
+
+      if (dwellAnchor?.stopId === stop.id) {
+        // keep existing anchor
+      } else {
+        dwellAnchor = { stopId: stop.id, since: Date.now() };
+      }
+
+      const kind = detectPromptKind(stop.id, defaultKind, dwellAnchor);
+      const eventKey = `${stop.id}:${kind}`;
+
+      if (lastEventKey === eventKey) return;
+
+      lastEventKey = eventKey;
+      onPrompt({ stop, kind });
     },
     () => {},
     { enableHighAccuracy: true, maximumAge: 10_000, timeout: 15_000 },
   );
 
   return () => navigator.geolocation.clearWatch(watchId);
+}
+
+/** @deprecated Prefer trackGeofenceContext for contextual prompts. */
+export function watchNearStop(
+  stops: GeofenceStop[],
+  onEnter: (stop: GeofenceStop) => void,
+): () => void {
+  return trackGeofenceContext({
+    stops,
+    defaultKind: "arrival",
+    onPrompt: ({ stop }) => onEnter(stop),
+  });
 }

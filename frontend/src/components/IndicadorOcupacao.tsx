@@ -1,63 +1,49 @@
-import type { Occupancy } from "../lib/types";
+import type { Occupancy, OccupancyLevel } from "../lib/types";
 
 interface IndicadorOcupacaoProps {
   occupancy: Occupancy;
   compact?: boolean;
 }
 
-const levelStyles: Record<
-  Occupancy["level"] | "no_data",
-  { bar: string; text: string; badge: string }
-> = {
-  free: {
-    bar: "bg-amber/40",
-    text: "text-amber",
-    badge: "bg-amber/20 text-amber",
-  },
-  moderate: {
-    bar: "bg-amber/70",
-    text: "text-amber",
-    badge: "bg-amber/20 text-amber",
-  },
-  crowded: {
-    bar: "bg-amber",
-    text: "text-amber",
-    badge: "bg-amber/30 text-darktxt",
-  },
-  packed: {
-    bar: "bg-coral",
-    text: "text-coral",
-    badge: "bg-coral/20 text-coral",
-  },
-  no_data: {
-    bar: "bg-muted/40",
-    text: "text-muted",
-    badge: "bg-light text-muted",
-  },
+const LEVEL_FILL_COUNT: Record<OccupancyLevel, number> = {
+  free: 1,
+  moderate: 2,
+  crowded: 3,
+  packed: 4,
 };
 
-function resolveStyle(occupancy: Occupancy) {
+const AMBER_OPACITIES = [0.35, 0.55, 0.75, 1] as const;
+
+function occupancyDisplayLabel(occupancy: Occupancy): string {
   if (occupancy.sample_size === 0) {
-    return levelStyles.no_data;
+    return "ocupação desconhecida";
   }
-  return levelStyles[occupancy.level];
+  return occupancy.label;
 }
 
-function fillPercent(occupancy: Occupancy): number {
-  if (occupancy.sample_size === 0) return 0;
+function PeopleIcon({ filledCount, size = 16 }: { filledCount: number; size?: number }) {
+  const figure = (index: number) => {
+    const opacity = index < filledCount ? AMBER_OPACITIES[filledCount - 1] : 0.2;
+    const x = index * 5;
+    return (
+      <g key={index} transform={`translate(${x}, 0)`} opacity={opacity}>
+        <circle cx="3" cy="2.5" r="2" fill="#E9A23B" />
+        <path d="M0.5 8 Q3 5.5 5.5 8" stroke="#E9A23B" strokeWidth="1.2" fill="none" />
+      </g>
+    );
+  };
 
-  switch (occupancy.level) {
-    case "free":
-      return 25;
-    case "moderate":
-      return 50;
-    case "crowded":
-      return 75;
-    case "packed":
-      return 100;
-    default:
-      return 0;
-  }
+  return (
+    <svg
+      width={size + 12}
+      height={size}
+      viewBox="0 0 20 10"
+      aria-hidden="true"
+      className="shrink-0"
+    >
+      {[0, 1, 2, 3].map(figure)}
+    </svg>
+  );
 }
 
 function formatRelativeTime(isoDate: string): string {
@@ -75,13 +61,19 @@ function formatRelativeTime(isoDate: string): string {
 }
 
 export default function IndicadorOcupacao({ occupancy, compact = false }: IndicadorOcupacaoProps) {
-  const style = resolveStyle(occupancy);
-  const width = fillPercent(occupancy);
+  const hasData = occupancy.sample_size > 0;
+  const label = occupancyDisplayLabel(occupancy);
+  const filledCount = hasData ? LEVEL_FILL_COUNT[occupancy.level] : 0;
 
   if (compact) {
     return (
-      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${style.badge}`}>
-        Ocupação: {occupancy.label}
+      <span
+        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+          hasData ? "bg-amber/20 text-amber" : "bg-light text-muted"
+        }`}
+      >
+        {hasData && <PeopleIcon filledCount={filledCount} size={12} />}
+        Ocupação: {label}
       </span>
     );
   }
@@ -89,22 +81,31 @@ export default function IndicadorOcupacao({ occupancy, compact = false }: Indica
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium text-darktxt">Ocupação</span>
-        <span className={`text-sm font-semibold ${style.text}`}>{occupancy.label}</span>
+        <span className="text-sm font-medium text-amber">Ocupação</span>
+        <span
+          className={`inline-flex items-center gap-1.5 text-sm font-semibold ${
+            hasData ? "text-darktxt" : "text-muted"
+          }`}
+        >
+          {hasData && <PeopleIcon filledCount={filledCount} />}
+          {label}
+        </span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-light">
-        <div
-          className={`h-full rounded-full transition-all ${style.bar}`}
-          style={{ width: `${width}%` }}
-        />
-      </div>
-      {occupancy.sample_size > 0 && occupancy.source_label && occupancy.recorded_at && (
+      {hasData && (
+        <div className="flex items-center gap-2">
+          <PeopleIcon filledCount={filledCount} size={20} />
+          <div className="h-2 flex-1 overflow-hidden rounded-full bg-light">
+            <div
+              className="h-full rounded-full bg-amber transition-all"
+              style={{ width: `${filledCount * 25}%`, opacity: AMBER_OPACITIES[filledCount - 1] }}
+            />
+          </div>
+        </div>
+      )}
+      {hasData && occupancy.source_label && occupancy.recorded_at && (
         <p className="text-xs text-muted">
           Fonte: {occupancy.source_label} · {formatRelativeTime(occupancy.recorded_at)}
         </p>
-      )}
-      {occupancy.sample_size === 0 && (
-        <p className="text-xs text-muted">Ainda não há leituras de ocupação para esta parada.</p>
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import FaixaConfianca from "./FaixaConfianca";
+import TagEstimativa from "./TagEstimativa";
 import type { StopSummary } from "../lib/types";
 
 interface CardParadaProps {
@@ -24,7 +25,10 @@ export default function CardParada({ stop }: CardParadaProps) {
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <h3 className="font-semibold text-darktxt">{stop.name}</h3>
-          <p className="text-xs uppercase tracking-wide text-muted">{stop.mode_label}</p>
+          <p className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-wide text-muted">
+            <span>{stop.mode_label}</span>
+            {stop.mode === "metro" && <TagEstimativa />}
+          </p>
         </div>
         <FaixaConfianca reliability={stop.reliability} compact />
       </div>

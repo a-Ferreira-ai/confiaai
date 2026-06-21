@@ -1,3 +1,8 @@
+import {
+  reliabilityDisplayLabel,
+  reliabilityFillPercent,
+  reliabilitySemaphoreClass,
+} from "../lib/pillarStyles";
 import type { Reliability } from "../lib/types";
 
 interface FaixaConfiancaProps {
@@ -5,54 +10,28 @@ interface FaixaConfiancaProps {
   compact?: boolean;
 }
 
-const levelStyles: Record<
-  Reliability["level"] | "no_data",
-  { bar: string; text: string; badge: string }
-> = {
-  high: {
-    bar: "bg-teal",
-    text: "text-teal",
-    badge: "bg-teal/20 text-teal",
-  },
-  medium: {
-    bar: "bg-amber",
-    text: "text-amber",
-    badge: "bg-amber/20 text-amber",
-  },
-  low: {
-    bar: "bg-coral",
-    text: "text-coral",
-    badge: "bg-coral/20 text-coral",
-  },
-  no_data: {
-    bar: "bg-muted/40",
-    text: "text-muted",
-    badge: "bg-light text-muted",
-  },
-};
-
-function resolveStyle(reliability: Reliability) {
-  if (reliability.sample_size === 0) {
-    return levelStyles.no_data;
-  }
-  return levelStyles[reliability.level];
+function SemaphoreDot({ level }: { level: Reliability["level"] }) {
+  return (
+    <span
+      className={`inline-block h-2 w-2 shrink-0 rounded-full ${reliabilitySemaphoreClass(level)}`}
+      aria-hidden="true"
+    />
+  );
 }
 
 export default function FaixaConfianca({ reliability, compact = false }: FaixaConfiancaProps) {
-  const style = resolveStyle(reliability);
-  const fillPercent =
-    reliability.sample_size === 0
-      ? 0
-      : reliability.level === "high"
-        ? 100
-        : reliability.level === "medium"
-          ? 66
-          : 33;
+  const hasData = reliability.sample_size > 0;
+  const label = reliabilityDisplayLabel(reliability);
 
   if (compact) {
     return (
-      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${style.badge}`}>
-        Confiança: {reliability.label}
+      <span
+        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+          hasData ? "bg-teal/15 text-teal" : "bg-light text-muted"
+        }`}
+      >
+        {hasData && <SemaphoreDot level={reliability.level} />}
+        Confiança: {label}
       </span>
     );
   }
@@ -60,22 +39,28 @@ export default function FaixaConfianca({ reliability, compact = false }: FaixaCo
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-medium text-darktxt">Confiança</span>
-        <span className={`text-sm font-semibold ${style.text}`}>{reliability.label}</span>
+        <span className="text-sm font-medium text-teal">Confiança</span>
+        <span
+          className={`inline-flex items-center gap-1.5 text-sm font-semibold ${
+            hasData ? "text-darktxt" : "text-muted"
+          }`}
+        >
+          {hasData && <SemaphoreDot level={reliability.level} />}
+          {label}
+        </span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-light">
-        <div
-          className={`h-full rounded-full transition-all ${style.bar}`}
-          style={{ width: `${fillPercent}%` }}
-        />
+        {hasData && (
+          <div
+            className={`h-full rounded-full transition-all ${reliabilitySemaphoreClass(reliability.level)}`}
+            style={{ width: `${reliabilityFillPercent(reliability.level)}%` }}
+          />
+        )}
       </div>
-      {reliability.sample_size > 0 && reliability.on_time_percent !== null && (
+      {hasData && reliability.on_time_percent !== null && (
         <p className="text-xs text-muted">
           {reliability.on_time_percent}% no horário · {reliability.sample_size} amostras
         </p>
-      )}
-      {reliability.sample_size === 0 && (
-        <p className="text-xs text-muted">Ainda não há dados de chegada para este trecho.</p>
       )}
     </div>
   );

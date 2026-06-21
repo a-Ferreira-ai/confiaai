@@ -1,32 +1,47 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import BotaoFavorito from "../components/BotaoFavorito";
 import BotaoReportar from "../components/BotaoReportar";
-import FaixaConfianca from "../components/FaixaConfianca";
-import FluxoReporte from "../components/FluxoReporte";
-import IndicadorOcupacao from "../components/IndicadorOcupacao";
+import FluxoReporte, { type ReportType } from "../components/FluxoReporte";
 import IndicadorSeguranca from "../components/IndicadorSeguranca";
+import LinhaNaParadaRow from "../components/LinhaNaParadaRow";
 import Mapa, { type MapMarker } from "../components/Mapa";
 import PromptGeofence from "../components/PromptGeofence";
-import { fetchOccupancy, fetchStop, fetchStops } from "../lib/api";
-import { markPrompted, watchNearStop, type GeofenceStop } from "../lib/geofence";
+import TagEstimativa from "../components/TagEstimativa";
+import { fetchStop, fetchStops } from "../lib/api";
+import {
+  markPrompted,
+  trackGeofenceContext,
+  type GeofencePromptEvent,
+} from "../lib/geofence";
+import { findNearbySaferStop, type SaferStopSuggestion } from "../lib/nearbySaferStop";
+import { enrichLinesAtStop, type LineAtStopEnriched } from "../lib/paradaHelpers";
 import { useReportsChannel } from "../lib/useReportsChannel";
-import type { Occupancy, StopDetail } from "../lib/types";
+import type { StopDetail } from "../lib/types";
 
 export default function Parada() {
   const { id } = useParams<{ id: string }>();
   const [stop, setStop] = useState<StopDetail | null>(null);
-  const [occupancy, setOccupancy] = useState<Occupancy | null>(null);
+  const [enrichedLines, setEnrichedLines] = useState<LineAtStopEnriched[]>([]);
+  const [saferStop, setSaferStop] = useState<SaferStopSuggestion | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [geofenceStop, setGeofenceStop] = useState<GeofenceStop | null>(null);
+  const [geofenceEvent, setGeofenceEvent] = useState<GeofencePromptEvent | null>(null);
   const [geofenceReportOpen, setGeofenceReportOpen] = useState(false);
+  const [geofenceReportType, setGeofenceReportType] = useState<ReportType>("arrival");
 
   const loadData = useCallback(async () => {
     if (!id) return;
 
-    const [stopData, occupancyData] = await Promise.all([fetchStop(id), fetchOccupancy(id)]);
+    const stopData = await fetchStop(id);
+    const [lines, safer] = await Promise.all([
+      enrichLinesAtStop(stopData),
+      findNearbySaferStop(stopData).catch(() => null),
+    ]);
+
     setStop(stopData);
-    setOccupancy(occupancyData.occupancy);
+    setEnrichedLines(lines);
+    setSaferStop(safer);
     setError(null);
   }, [id]);
 
@@ -61,8 +76,17 @@ export default function Parada() {
 
     fetchStops()
       .then((data) => {
-        cleanupWatch = watchNearStop(data.stops, (nearStop) => {
-          setGeofenceStop(nearStop);
+        cleanupWatch = trackGeofenceContext({
+          stops: data.stops,
+          defaultKind: "arrival",
+          onPrompt: (event) => {
+            setGeofenceEvent((current) => {
+              if (current?.stop.id === event.stop.id && current.kind === event.kind) {
+                return current;
+              }
+              return event;
+            });
+          },
         });
       })
       .catch(() => {});
@@ -81,15 +105,20 @@ export default function Parada() {
         lat: parseFloat(stop.latitude),
         lng: parseFloat(stop.longitude),
         label: stop.name,
-        variant: stop.mode,
+        reliability: stop.reliability,
       },
     ];
   }, [stop]);
 
   function dismissGeofencePrompt() {
-    if (geofenceStop) markPrompted(geofenceStop.id);
-    setGeofenceStop(null);
+    if (geofenceEvent) markPrompted(geofenceEvent.stop.id);
+    setGeofenceEvent(null);
     setGeofenceReportOpen(false);
+  }
+
+  function openGeofenceReport(initialType: ReportType) {
+    setGeofenceReportType(initialType);
+    setGeofenceReportOpen(true);
   }
 
   if (loading) {
@@ -100,10 +129,10 @@ export default function Parada() {
     );
   }
 
-  if (error || !stop || !occupancy) {
+  if (error || !stop) {
     return (
       <div className="mx-auto flex min-h-screen max-w-lg flex-col items-center justify-center gap-4 px-6 text-center">
-        <p className="text-coral">{error ?? "Parada não encontrada."}</p>
+        <p className="text-darktxt">{error ?? "Parada não encontrada."}</p>
         <Link to="/" className="text-teal underline">
           Voltar ao início
         </Link>
@@ -111,59 +140,70 @@ export default function Parada() {
     );
   }
 
-  const activeGeofenceStop =
-    geofenceStop && Number(geofenceStop.id) === stop.id ? geofenceStop : null;
+  const activeGeofenceEvent =
+    geofenceEvent && Number(geofenceEvent.stop.id) === stop.id ? geofenceEvent : null;
+  const geofenceLineName = stop.trips[0]?.line_name;
 
   return (
     <div className="min-h-screen bg-light pb-24">
       <header className="bg-ink px-6 py-8 text-paper">
-        <Link to="/" className="mb-4 inline-block text-sm text-[#9FC6CC] underline">
-          ← Início
-        </Link>
-        <p className="text-sm uppercase tracking-widest text-[#7FA9AF]">{stop.mode_label}</p>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <Link to="/" className="text-sm text-on-ink-subtle underline">
+            ← Voltar
+          </Link>
+          <BotaoFavorito
+            item={{
+              kind: "stop",
+              id: stop.id,
+              name: stop.name,
+              mode: stop.mode,
+              mode_label: stop.mode_label,
+            }}
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm uppercase tracking-widest text-on-ink-tertiary">{stop.mode_label}</p>
+          {stop.mode === "metro" && <TagEstimativa />}
+        </div>
         <h1 className="text-3xl font-bold">{stop.name}</h1>
-        <div className="mt-6 rounded-xl bg-ink-light p-4">
-          <FaixaConfianca reliability={stop.reliability} />
+        <div className="mt-4">
+          <IndicadorSeguranca safety={stop.safety} variant="selo" />
         </div>
       </header>
 
       <main className="mx-auto max-w-lg space-y-6 px-4 py-6">
+        {saferStop && (
+          <section className="rounded-xl border border-tint bg-tint p-4 shadow-sm">
+            <p className="text-sm text-darktxt">
+              Esta parada tem relatos recentes de atenção na segurança.
+            </p>
+            <Link
+              to={`/parada/${saferStop.id}`}
+              className="mt-2 inline-block text-sm font-semibold text-teal underline"
+            >
+              Sugerir parada mais segura próxima — {saferStop.name}
+            </Link>
+          </section>
+        )}
+
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold text-darktxt">Linhas nesta parada</h2>
+          {enrichedLines.length === 0 ? (
+            <p className="text-muted">Nenhuma linha cadastrada para esta parada.</p>
+          ) : (
+            enrichedLines.map((enriched) => (
+              <LinhaNaParadaRow key={enriched.line.id} enriched={enriched} />
+            ))
+          )}
+        </section>
+
         <section className="overflow-hidden rounded-xl border border-tint bg-paper shadow-sm">
           <Mapa
             markers={mapMarkers}
             center={[parseFloat(stop.latitude), parseFloat(stop.longitude)]}
             zoom={14}
-            className="h-56 w-full"
+            className="h-48 w-full"
           />
-        </section>
-
-        <section className="rounded-xl border border-tint bg-paper p-4 shadow-sm">
-          <IndicadorOcupacao occupancy={occupancy} />
-        </section>
-
-        <section className="rounded-xl border border-coral/20 bg-paper p-4 shadow-sm">
-          <IndicadorSeguranca safety={stop.safety} />
-        </section>
-
-        <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-darktxt">Linhas nesta parada</h2>
-          {stop.lines.length === 0 ? (
-            <p className="text-muted">Nenhuma linha cadastrada para esta parada.</p>
-          ) : (
-            stop.lines.map((line) => (
-              <Link
-                key={line.id}
-                to={`/linha/${line.id}`}
-                className="flex items-center justify-between rounded-xl border border-tint bg-paper p-4 shadow-sm transition hover:border-teal/30"
-              >
-                <div>
-                  <h3 className="font-semibold text-darktxt">{line.name}</h3>
-                  <p className="text-xs uppercase tracking-wide text-muted">{line.mode_label}</p>
-                </div>
-                <FaixaConfianca reliability={line.reliability} compact />
-              </Link>
-            ))
-          )}
         </section>
       </main>
 
@@ -174,23 +214,25 @@ export default function Parada() {
         onSuccess={() => loadData().catch((err: Error) => setError(err.message))}
       />
 
-      {activeGeofenceStop && !geofenceReportOpen && (
+      {activeGeofenceEvent && !geofenceReportOpen && (
         <PromptGeofence
-          stop={activeGeofenceStop}
-          onReport={() => setGeofenceReportOpen(true)}
+          kind={activeGeofenceEvent.kind}
+          stop={activeGeofenceEvent.stop}
+          lineName={geofenceLineName}
+          onReport={openGeofenceReport}
           onDismiss={dismissGeofencePrompt}
         />
       )}
 
-      {geofenceReportOpen && activeGeofenceStop && (
+      {geofenceReportOpen && activeGeofenceEvent && (
         <FluxoReporte
           stopId={stop.id}
           stopName={stop.name}
           trips={stop.trips}
           context="geofence_arrival"
-          initialType="occupancy"
+          initialType={geofenceReportType}
           onSuccess={() => {
-            markPrompted(activeGeofenceStop.id);
+            markPrompted(activeGeofenceEvent.stop.id);
             loadData().catch((err: Error) => setError(err.message));
           }}
           onClose={dismissGeofencePrompt}

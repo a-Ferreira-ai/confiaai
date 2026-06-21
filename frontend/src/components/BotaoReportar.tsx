@@ -26,7 +26,7 @@ export default function BotaoReportar({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-coral text-2xl font-bold text-paper shadow-lg transition hover:bg-coral/90"
+        className="fixed bottom-6 right-6 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-teal text-2xl font-bold text-paper shadow-lg transition hover:bg-teal/90"
         aria-label="Reportar"
       >
         +
