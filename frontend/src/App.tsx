@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import AppShell from "./components/AppShell";
+import ChatWidget from "./components/Chat/ChatWidget";
 import Busca from "./pages/Busca";
 import Favoritos from "./pages/Favoritos";
 import Linha from "./pages/Linha";
@@ -22,6 +23,7 @@ function App() {
         <Route path="/linha/:id" element={<Linha />} />
         <Route path="/parada/:id" element={<Parada />} />
       </Routes>
+      <ChatWidget />
     </BrowserRouter>
   );
 }
