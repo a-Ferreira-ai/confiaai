@@ -15,7 +15,8 @@ class GrokClient
   end
 
   def call
-    raise Error, "GROK_API_KEY não configurada" if GROK_API_KEY.blank?
+    api_key = ENV["GROK_API_KEY"]
+    raise Error, "GROK_API_KEY não configurada" if api_key.blank?
 
     uri = URI.parse(ENDPOINT)
 
@@ -26,9 +27,9 @@ class GrokClient
 
     request = Net::HTTP::Post.new(uri.path)
     request["Content-Type"] = "application/json"
-    request["Authorization"] = "Bearer #{GROK_API_KEY}"
+    request["Authorization"] = "Bearer #{api_key}"
     request.body = {
-      model: GROK_MODEL,
+      model: ENV.fetch("GROK_MODEL", "grok-4.3"),
       messages: @messages,
       temperature: 0.7,
       max_tokens: 500
