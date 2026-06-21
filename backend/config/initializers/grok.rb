@@ -1,4 +1,4 @@
-GROK_API_KEY = ENV["GROK_API_KEY"]
+GROK_API_KEY = ENV.fetch("GROK_API_KEY", nil)
 GROK_MODEL   = ENV.fetch("GROK_MODEL", "grok-4.3")
 
 if GROK_API_KEY.blank?
