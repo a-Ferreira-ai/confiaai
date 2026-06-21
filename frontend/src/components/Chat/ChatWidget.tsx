@@ -26,43 +26,46 @@ export default function ChatWidget() {
 
   return (
     <div className="fixed bottom-6 left-6 z-40 flex flex-col items-start gap-3">
-      {/* Floating panel */}
-      {isOpen && (
-        <div
-          ref={panelRef}
-          className="w-80 bg-white rounded-2xl shadow-2xl border border-tint flex flex-col overflow-hidden"
-          style={{ height: "420px" }}
-        >
-          {/* Panel header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-tint bg-teal">
-            <div className="flex items-center gap-2">
-              <span className="text-white font-semibold text-sm">Assistente Confia AI</span>
-            </div>
-            <button
-              type="button"
-              onClick={toggleOpen}
-              className="text-white/80 hover:text-white transition-colors"
-              aria-label="Fechar chat"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-5 h-5"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </button>
+      {/* Floating panel — kept in DOM for smooth transition */}
+      <div
+        ref={panelRef}
+        className={`w-80 bg-white rounded-2xl shadow-2xl border border-tint flex flex-col overflow-hidden transition-all duration-200 ease-in-out ${
+          isOpen
+            ? "opacity-100 translate-y-0 pointer-events-auto"
+            : "opacity-0 translate-y-4 pointer-events-none"
+        }`}
+        style={{ height: "420px" }}
+        aria-hidden={!isOpen}
+      >
+        {/* Panel header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-tint bg-teal">
+          <div className="flex items-center gap-2">
+            <span className="text-white font-semibold text-sm">Assistente Confia AI</span>
           </div>
-
-          {/* Chat content */}
-          <ChatPanel {...store} />
+          <button
+            type="button"
+            onClick={toggleOpen}
+            className="text-white/80 hover:text-white transition-colors"
+            aria-label="Fechar chat"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="w-5 h-5"
+            >
+              <path
+                fillRule="evenodd"
+                d="M5.47 5.47a.75.75 0 011.06 0L12 10.94l5.47-5.47a.75.75 0 111.06 1.06L13.06 12l5.47 5.47a.75.75 0 11-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 01-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 010-1.06z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
         </div>
-      )}
+
+        {/* Chat content */}
+        <ChatPanel {...store} />
+      </div>
 
       {/* FAB */}
       <button

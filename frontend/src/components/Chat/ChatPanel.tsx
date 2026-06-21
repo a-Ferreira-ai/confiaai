@@ -10,6 +10,7 @@ type ChatPanelProps = ReturnType<typeof useChatStore>;
 export function ChatPanel({
   messages,
   isLoading,
+  isRateLimited,
   error,
   sendMessage,
   clearConversation,
@@ -24,7 +25,7 @@ export function ChatPanel({
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const text = inputValue.trim();
-    if (!text || isLoading) return;
+    if (!text || isLoading || isRateLimited) return;
     setInputValue("");
     await sendMessage(text);
   }
@@ -50,7 +51,13 @@ export function ChatPanel({
         )}
 
         {isLoading && (
-          <ChatMessage role="assistant" content="..." />
+          <div className="flex justify-start">
+            <div className="max-w-[80%] rounded-2xl rounded-tl-sm bg-[#F1F6F7] px-4 py-3 flex gap-1 items-center">
+              <span className="w-2 h-2 rounded-full bg-gray-400 animate-bounce [animation-delay:0ms]" />
+              <span className="w-2 h-2 rounded-full bg-gray-400 animate-bounce [animation-delay:150ms]" />
+              <span className="w-2 h-2 rounded-full bg-gray-400 animate-bounce [animation-delay:300ms]" />
+            </div>
+          </div>
         )}
 
         <div ref={bottomRef} />
@@ -83,7 +90,7 @@ export function ChatPanel({
         />
         <button
           type="submit"
-          disabled={isLoading || inputValue.trim() === ""}
+          disabled={isLoading || isRateLimited || inputValue.trim() === ""}
           className="bg-teal text-white rounded-full w-9 h-9 flex items-center justify-center shrink-0 disabled:opacity-40 transition-opacity"
           aria-label="Enviar mensagem"
         >

@@ -8,6 +8,7 @@ type ChatState = {
   isOpen: boolean;
   isLoading: boolean;
   error: string | null;
+  isRateLimited: boolean;
 };
 
 const TIMEOUT_MS = 15_000;
@@ -18,7 +19,9 @@ export function useChatStore() {
     isOpen: false,
     isLoading: false,
     error: null,
+    isRateLimited: false,
   });
+  const rateLimitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Keep a ref so sendMessage always has access to the latest messages
   // without needing to be in its dependency array.
@@ -34,7 +37,12 @@ export function useChatStore() {
       messages: messagesForApi,
       isLoading: true,
       error: null,
+      isRateLimited: false,
     }));
+    if (rateLimitTimerRef.current) {
+      clearTimeout(rateLimitTimerRef.current);
+      rateLimitTimerRef.current = null;
+    }
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -60,7 +68,16 @@ export function useChatStore() {
         } catch {
           // ignore JSON parse errors — keep generic message
         }
-        setState((prev) => ({ ...prev, isLoading: false, error: errorMessage }));
+
+        if (response.status === 429) {
+          if (rateLimitTimerRef.current) clearTimeout(rateLimitTimerRef.current);
+          setState((prev) => ({ ...prev, isLoading: false, error: errorMessage, isRateLimited: true }));
+          rateLimitTimerRef.current = setTimeout(() => {
+            setState((prev) => ({ ...prev, isRateLimited: false }));
+          }, 60_000);
+        } else {
+          setState((prev) => ({ ...prev, isLoading: false, error: errorMessage }));
+        }
         return;
       }
 
@@ -98,6 +115,7 @@ export function useChatStore() {
     isOpen: state.isOpen,
     isLoading: state.isLoading,
     error: state.error,
+    isRateLimited: state.isRateLimited,
     sendMessage,
     toggleOpen,
     clearConversation,
