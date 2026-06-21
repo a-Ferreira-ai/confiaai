@@ -18,6 +18,7 @@ Rails.application.routes.draw do
       post "reportes/parada", to: "reportes#parada"
       post "reportes/chegada", to: "reportes#chegada"
       post "reportes/ocupacao", to: "reportes#ocupacao"
+      post "chat", to: "chat#create"
     end
   end
 end
