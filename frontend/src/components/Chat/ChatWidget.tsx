@@ -25,7 +25,7 @@ export default function ChatWidget() {
   }, [isOpen, toggleOpen]);
 
   return (
-    <div className="fixed bottom-6 left-6 z-40 flex flex-col items-start gap-3">
+    <div className="fixed bottom-20 left-4 z-50 flex flex-col items-start gap-3">
       {/* Floating panel — kept in DOM for smooth transition */}
       <div
         ref={panelRef}
