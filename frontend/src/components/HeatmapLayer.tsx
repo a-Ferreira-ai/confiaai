@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useMap } from "react-leaflet";
 import L from "leaflet";
+// @ts-ignore — leaflet.heat has no official TS declarations
 import "leaflet.heat";
 
 export interface HeatmapPoint {

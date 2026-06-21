@@ -90,7 +90,7 @@ export function useChatStore() {
   }, []);
 
   const clearConversation = useCallback(() => {
-    setState((prev) => ({ ...prev, messages: [] }));
+    setState((prev) => ({ ...prev, messages: [], error: null }));
   }, []);
 
   return {

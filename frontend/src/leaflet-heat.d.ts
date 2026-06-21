@@ -1,25 +1,28 @@
-import type { Layer, LatLngExpression } from "leaflet";
+import * as L from "leaflet";
+
+declare module "leaflet.heat" {
+  export {};
+}
 
 declare module "leaflet" {
+  function heatLayer(
+    latlngs: Array<[number, number, number?]>,
+    options?: HeatMapOptions
+  ): HeatLayer;
+
   interface HeatMapOptions {
     minOpacity?: number;
     maxZoom?: number;
     max?: number;
     radius?: number;
     blur?: number;
-    gradient?: Record<number, string>;
+    gradient?: Record<string, string>;
   }
 
-  interface HeatLayer extends Layer {
-    setOptions(options: HeatMapOptions): HeatLayer;
-    addLatLng(latlng: LatLngExpression, intensity?: number): HeatLayer;
-    setLatLngs(latlngs: Array<[number, number, number?]>): HeatLayer;
+  interface HeatLayer extends L.Layer {
+    setLatLngs(latlngs: Array<[number, number, number?]>): this;
+    addLatLng(latlng: [number, number, number?]): this;
+    setOptions(options: HeatMapOptions): this;
+    redraw(): this;
   }
-
-  function heatLayer(
-    latlngs: Array<[number, number, number?]>,
-    options?: HeatMapOptions,
-  ): HeatLayer;
 }
-
-declare module "leaflet.heat";
