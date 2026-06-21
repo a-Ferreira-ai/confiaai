@@ -1,0 +1,5 @@
+json.level reliability[:level]
+json.label reliability[:label]
+json.sample_size reliability[:sample_size]
+json.median_delay_seconds reliability[:median_delay_seconds]
+json.on_time_percent reliability[:on_time_percent]

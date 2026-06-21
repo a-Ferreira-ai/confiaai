@@ -1,0 +1,3 @@
+stop_id,stop_name,stop_lat,stop_lon
+STOP001,Parada Ceilândia Centro,-15.820300,-48.110200
+STOP002,Parada Taguatinga Centro,-15.836900,-48.053200

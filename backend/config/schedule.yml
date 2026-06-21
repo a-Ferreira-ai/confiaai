@@ -1,0 +1,7 @@
+score_recalculation:
+  cron: "*/5 * * * *"
+  class: ScoreRecalculationJob
+
+stale_reading_cleanup:
+  cron: "0 * * * *"
+  class: StaleReadingCleanupJob

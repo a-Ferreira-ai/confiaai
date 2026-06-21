@@ -1,0 +1,10 @@
+json.id @event.id
+json.trip_id @event.trip_id
+json.stop_id @event.stop_id
+json.scheduled_at @event.scheduled_at
+json.observed_at @event.observed_at
+json.delay_seconds @event.delay_seconds
+json.source @event.source
+json.source_label I18n.t("enums.arrival_event.source.#{@event.source}")
+json.context @event.context
+json.context_label I18n.t("enums.arrival_event.context.#{@event.context}")

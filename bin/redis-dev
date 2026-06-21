@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PORT="${REDIS_PORT:-6379}"
+
+if command -v redis-cli >/dev/null 2>&1 && redis-cli -p "$PORT" ping >/dev/null 2>&1; then
+  echo "Redis already running on port ${PORT} — reusing existing instance"
+  exec sleep infinity
+fi
+
+if ! command -v redis-server >/dev/null 2>&1; then
+  echo "ERROR: redis-server not found and nothing is listening on port ${PORT}" >&2
+  exit 1
+fi
+
+exec redis-server --port "$PORT"

@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+FRONTEND="$ROOT/frontend"
+PORT="${VITE_PORT:-5173}"
+
+cd "$FRONTEND"
+
+if curl -sf "http://127.0.0.1:${PORT}/" >/dev/null 2>&1; then
+  echo "Vite already running on port ${PORT} — reusing existing instance"
+  exec sleep infinity
+fi
+
+if command -v lsof >/dev/null 2>&1; then
+  stale_pids="$(lsof -ti :"${PORT}" 2>/dev/null || true)"
+  if [ -n "$stale_pids" ]; then
+    echo "Port ${PORT} is in use but not responding — freeing stale process(es)"
+    # shellcheck disable=SC2086
+    kill $stale_pids 2>/dev/null || true
+    sleep 1
+  fi
+fi
+
+exec npm run dev -- --port "$PORT" --strictPort

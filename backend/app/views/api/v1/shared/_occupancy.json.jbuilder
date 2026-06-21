@@ -1,0 +1,6 @@
+json.level occupancy[:level]
+json.label occupancy[:label]
+json.sample_size occupancy[:sample_size]
+json.source occupancy[:source]
+json.source_label occupancy[:source_label]
+json.recorded_at occupancy[:recorded_at]

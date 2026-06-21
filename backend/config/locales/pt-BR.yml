@@ -1,0 +1,100 @@
+pt-BR:
+  api:
+    errors:
+      missing_device_token: "Token de dispositivo ausente ou inválido."
+      not_found: "%{model} não encontrado."
+      record_not_found: "Registro não encontrado."
+      unprocessable_entity: "Não foi possível processar a solicitação."
+      missing_stop_id: "Parâmetro stop_id é obrigatório."
+      missing_origin: "Parâmetro origin_stop_id é obrigatório."
+      missing_destination: "Parâmetro destination_stop_id é obrigatório."
+      same_stop: "Origem e destino devem ser paradas diferentes."
+      route_not_found: "Rota não encontrada para os parâmetros informados."
+      missing_trip_id: "Parâmetro trip_id é obrigatório."
+      missing_scheduled_at: "Parâmetro scheduled_at é obrigatório."
+      missing_observed_at: "Parâmetro observed_at é obrigatório."
+      missing_context: "Parâmetro context é obrigatório."
+      missing_occupancy_value: "Informe level, free_seats ou boarding_count."
+
+  routing:
+    metro_line_name: "Metrô DF (demo)"
+    transfer: "Baldeação"
+
+  activerecord:
+    models:
+      line: "Linha"
+      stop: "Parada"
+      trip: "Viagem"
+      stop_time: "Horário de parada"
+      arrival_event: "Evento de chegada"
+      occupancy_reading: "Leitura de ocupação"
+      stop_report: "Relato de parada"
+      demand_search: "Busca de demanda"
+
+  enums:
+    line:
+      mode:
+        bus: "ônibus"
+        metro: "metrô"
+    stop:
+      mode:
+        bus: "ônibus"
+        metro: "metrô"
+    arrival_event:
+      source:
+        gps: "GPS"
+        user: "usuário"
+      context:
+        gps: "GPS"
+        geofence_arrival: "chegada (geofence)"
+        geofence_boarding: "embarque (geofence)"
+        on_demand: "sob demanda"
+    occupancy_reading:
+      source:
+        seat_sensor: "sensor de assento"
+        turnstile: "catraca"
+        user_report: "relato do usuário"
+      level:
+        free: "livre"
+        moderate: "moderado"
+        crowded: "cheio"
+        packed: "lotado"
+      context:
+        gps: "GPS"
+        geofence_arrival: "chegada (geofence)"
+        geofence_boarding: "embarque (geofence)"
+        on_demand: "sob demanda"
+    stop_report:
+      category:
+        iluminacao: "iluminação"
+        infraestrutura: "infraestrutura"
+        seguranca_geral: "segurança geral"
+      context:
+        geofence_arrival: "chegada (geofence)"
+        on_demand: "sob demanda"
+    demand_search:
+      mode_filter:
+        bus: "ônibus"
+        metro: "metrô"
+
+  occupancy:
+    levels:
+      free: "livre"
+      moderate: "moderado"
+      crowded: "cheio"
+      packed: "lotado"
+      no_data: "sem dados"
+
+  reliability:
+    level:
+      high: "alta"
+      medium: "média"
+      low: "baixa"
+      no_data: "sem dados"
+
+  safety:
+    level:
+      high: "alta"
+      medium: "média"
+      low: "baixa"
+      no_data: "sem dados"

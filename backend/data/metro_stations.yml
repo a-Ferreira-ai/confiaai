@@ -1,0 +1,35 @@
+# Synthetic metro stations for the Ceilândia ↔ Taguatinga demo corridor.
+# Metro data is seed-only per architecture.md (not from GTFS).
+stations:
+  - gtfs_id: metro-samambaia-sul
+    name: Samambaia Sul
+    latitude: -15.862500
+    longitude: -48.095800
+  - gtfs_id: metro-samambaia
+    name: Samambaia
+    latitude: -15.871200
+    longitude: -48.088400
+  - gtfs_id: metro-ceilandia-sul
+    name: Ceilândia Sul
+    latitude: -15.838600
+    longitude: -48.108900
+  - gtfs_id: metro-ceilandia-centro
+    name: Ceilândia Centro
+    latitude: -15.820300
+    longitude: -48.110200
+  - gtfs_id: metro-guara
+    name: Guará
+    latitude: -15.832100
+    longitude: -48.056700
+  - gtfs_id: metro-aguas-claras
+    name: Águas Claras
+    latitude: -15.839800
+    longitude: -48.025400
+  - gtfs_id: metro-taguatinga-sul
+    name: Taguatinga Sul
+    latitude: -15.843600
+    longitude: -48.047800
+  - gtfs_id: metro-taguatinga-centro
+    name: Taguatinga Centro
+    latitude: -15.836900
+    longitude: -48.053200

@@ -1,0 +1,4 @@
+redis: bin/redis-dev
+web: bin/rails-dev
+worker: cd backend && bundle exec sidekiq
+frontend: bin/vite-dev
